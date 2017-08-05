@@ -15,26 +15,21 @@
  * under the License.
  */
 
-package org.killbill.billing.plugin.helloworld;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Properties;
-import java.util.UUID;
+package com.fathomstudio.killbillbluepayplugin;
 
 import org.killbill.billing.catalog.api.Currency;
 import org.killbill.billing.osgi.libs.killbill.OSGIKillbillLogService;
 import org.killbill.billing.payment.api.PaymentMethodPlugin;
 import org.killbill.billing.payment.api.PluginProperty;
-import org.killbill.billing.payment.plugin.api.GatewayNotification;
-import org.killbill.billing.payment.plugin.api.HostedPaymentPageFormDescriptor;
-import org.killbill.billing.payment.plugin.api.PaymentMethodInfoPlugin;
-import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
-import org.killbill.billing.payment.plugin.api.PaymentPluginApiException;
-import org.killbill.billing.payment.plugin.api.PaymentTransactionInfoPlugin;
+import org.killbill.billing.payment.plugin.api.*;
 import org.killbill.billing.util.callcontext.CallContext;
 import org.killbill.billing.util.callcontext.TenantContext;
 import org.killbill.billing.util.entity.Pagination;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Properties;
+import java.util.UUID;
 
 //
 // A 'real' payment plugin would of course implement this interface.

@@ -1,5 +1,4 @@
-killbill-hello-world-java-plugin
-================================
+# Kill Bill BluePay Plugin
 
 Hello World Kill Bill plugin in Java. It shows how to:
 

@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package org.killbill.billing.plugin.helloworld;
+package com.fathomstudio.killbillbluepayplugin;
 
 import org.killbill.billing.account.api.Account;
 import org.killbill.billing.account.api.AccountApiException;

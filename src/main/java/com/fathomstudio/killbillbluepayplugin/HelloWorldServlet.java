@@ -15,16 +15,15 @@
  * under the License.
  */
 
-package org.killbill.billing.plugin.helloworld;
+package com.fathomstudio.killbillbluepayplugin;
 
-import java.io.IOException;
+import org.osgi.service.log.LogService;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.osgi.service.log.LogService;
+import java.io.IOException;
 
 public class HelloWorldServlet extends HttpServlet {
 

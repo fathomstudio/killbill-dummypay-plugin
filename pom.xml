@@ -25,21 +25,21 @@
         <groupId>org.kill-bill.billing</groupId>
         <version>0.140.2</version>
     </parent>
-    <groupId>org.kill-bill.billing.plugin.java</groupId>
-    <artifactId>hello-world-plugin</artifactId>
-    <name>Kill Bill OSGI Hello World bundle</name>
+    <groupId>com.fathomstudio</groupId>
+    <artifactId>killbill-bluepay-plugin</artifactId>
+    <name>Kill Bill OSGI BluePay plugin</name>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>bundle</packaging>
-    <description>Kill Bill Hello World plugin</description>
-    <url>http://github.com/killbill/killbill-hello-world-java-plugin</url>
+    <description>Kill Bill BluePay plugin</description>
+    <url>https://github.com/fathomstudio/killbill-bluepay-plugin</url>
     <scm>
-        <connection>scm:git:git://github.com/killbill/killbill-hello-world-java-plugin.git</connection>
-        <developerConnection>scm:git:git@github.com:killbill/killbill-hello-world-java-plugin.git</developerConnection>
-        <url>http://github.com/killbill/killbill-hello-world-java-plugin/tree/master</url>
+        <connection>scm:git:git://github.com/fathomstudio/killbill-bluepay-plugin.git</connection>
+        <developerConnection>scm:git:git@github.com:fathomstudio/killbill-bluepay-plugin.git</developerConnection>
+        <url>http://github.com/fathomstudio/killbill-bluepay-plugin/tree/master</url>
     </scm>
     <issueManagement>
-        <system>Github</system>
-        <url>https://github.com/killbill/killbill-hello-world-java-plugin/issues</url>
+        <system>GitHub</system>
+        <url>https://github.com/fathomstudio/killbill-bluepay-plugin/issues</url>
     </issueManagement>
     <dependencies>
         <dependency>
@@ -135,9 +135,9 @@
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
-                        <Bundle-Activator>org.killbill.billing.plugin.helloworld.HelloWorldActivator</Bundle-Activator>
+                        <Bundle-Activator>com.fathomstudio.killbillbluepayplugin.HelloWorldActivator</Bundle-Activator>
                         <Export-Package />
-                        <Private-Package>org.killbill.billing.plugin.helloworld.*</Private-Package>
+                        <Private-Package>com.fathomstudio.killbillbluepayplugin.*</Private-Package>
                         <!-- Optional resolution because exported by the Felix system bundle -->
                         <Import-Package>
                             org.killbill.billing.account.api;
@@ -300,7 +300,7 @@
                 <artifactId>maven-shade-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>assemble-killbill-osgi-bundles-hello-world-java-plugin</id>
+                        <id>assemble-killbill-osgi-bundles-bluepay-java-plugin</id>
                         <goals>
                             <goal>shade</goal>
                         </goals>

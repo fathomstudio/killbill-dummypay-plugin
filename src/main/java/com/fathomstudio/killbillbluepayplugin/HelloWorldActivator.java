@@ -16,18 +16,17 @@
  * under the License.
  */
 
-package org.killbill.billing.plugin.helloworld;
-
-import java.util.Hashtable;
-
-import javax.servlet.Servlet;
-import javax.servlet.http.HttpServlet;
+package com.fathomstudio.killbillbluepayplugin;
 
 import org.killbill.billing.osgi.api.OSGIPluginProperties;
 import org.killbill.billing.osgi.libs.killbill.KillbillActivatorBase;
 import org.killbill.billing.osgi.libs.killbill.OSGIKillbillEventDispatcher;
 import org.killbill.billing.payment.plugin.api.PaymentPluginApi;
 import org.osgi.framework.BundleContext;
+
+import javax.servlet.Servlet;
+import javax.servlet.http.HttpServlet;
+import java.util.Hashtable;
 
 public class HelloWorldActivator extends KillbillActivatorBase {
 
