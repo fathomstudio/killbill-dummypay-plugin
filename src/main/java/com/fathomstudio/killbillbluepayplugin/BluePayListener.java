@@ -33,13 +33,16 @@ import javax.annotation.Nullable;
 import java.util.Properties;
 import java.util.UUID;
 
-public class HelloWorldListener extends PluginConfigurationEventHandler implements OSGIKillbillEventDispatcher.OSGIKillbillEventHandler {
+/**
+ * Kill Bill events are listened to and handled here.
+ */
+public class BluePayListener extends PluginConfigurationEventHandler implements OSGIKillbillEventDispatcher.OSGIKillbillEventHandler {
 
     private final LogService logService;
     private final OSGIKillbillAPI osgiKillbillAPI;
 
-    public HelloWorldListener(final OSGIKillbillLogService logService, final OSGIKillbillAPI killbillAPI) {
-        super(new HelloWorldPluginConfigurationHandler(HelloWorldActivator.PLUGIN_NAME, killbillAPI, logService));
+    public BluePayListener(final OSGIKillbillLogService logService, final OSGIKillbillAPI killbillAPI) {
+        super(new HelloWorldPluginConfigurationHandler(BluePayActivator.PLUGIN_NAME, killbillAPI, logService));
         this.logService = logService;
         this.osgiKillbillAPI = killbillAPI;
     }

@@ -43,6 +43,11 @@
 	</issueManagement>
 	<dependencies>
 		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpclient</artifactId>
+			<version>4.5.3</version>
+		</dependency>
+		<dependency>
 			<groupId>org.kill-bill.billing</groupId>
 			<artifactId>killbill-api</artifactId>
 			<scope>provided</scope>
@@ -135,7 +140,7 @@
 				<extensions>true</extensions>
 				<configuration>
 					<instructions>
-						<Bundle-Activator>com.fathomstudio.killbillbluepayplugin.HelloWorldActivator</Bundle-Activator>
+						<Bundle-Activator>com.fathomstudio.killbillbluepayplugin.BluePayActivator</Bundle-Activator>
 						<Export-Package/>
 						<Private-Package>com.fathomstudio.killbillbluepayplugin.*</Private-Package>
 						<!-- Optional resolution because exported by the Felix system bundle -->
@@ -317,6 +322,14 @@
 						</configuration>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>1.7</source>
+					<target>1.7</target>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>

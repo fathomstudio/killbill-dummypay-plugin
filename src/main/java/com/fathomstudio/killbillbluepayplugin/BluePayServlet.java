@@ -25,17 +25,21 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-public class HelloWorldServlet extends HttpServlet {
-
-    private final LogService logService;
-
-    public HelloWorldServlet(final LogService logService) {
-        this.logService = logService;
-    }
-
-    @Override
-    protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
-        // Find me on http://127.0.0.1:8080/plugins/hello-world-plugin
-        logService.log(LogService.LOG_INFO, "Hello world");
-    }
+/**
+ * This allows direct communication to the plugin from a caller.
+ */
+public class BluePayServlet extends HttpServlet {
+	
+	private final LogService logService;
+	
+	public BluePayServlet(final LogService logService) {
+		this.logService = logService;
+	}
+	
+	@Override
+	protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
+		// find me on http://killbill:8080/plugins/killbill-bluepay-plugin
+		logService.log(LogService.LOG_INFO, "Hello, world!");
+		resp.getOutputStream().print("Hello, world!");
+	}
 }

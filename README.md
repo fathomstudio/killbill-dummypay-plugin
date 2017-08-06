@@ -1,10 +1,9 @@
 # Kill Bill BluePay Plugin
 
-Hello World Kill Bill plugin in Java. It shows how to:
+Kill Bill plugin for BluePay.
 
-* Build an OSGI plugin using Maven
-* Listen to Kill Bill events
-* Call Kill Bill APIs from the plugin
-* Register a custom HTTP servlet
+## Building
+`mvn clean install`
 
-To build, run `mvn clean install`. You can then install the plugin (`target/hello-world-plugin-*.jar`) in `/var/tmp/bundles/plugins/java/hello/1.0`.
+## Installing
+Copy the JAR (`target/killbill-bluepay-plugin-<version>.jar`) to the Kill Bill path `/var/lib/killbill/bundles/plugins/java/killbill-bluepay-plugin/<version>/killbill-bluepay-plugin-<version>.jar`. This path can change with the `org.killbill.osgi.bundle.install.dir` property.

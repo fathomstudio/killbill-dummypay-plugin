@@ -28,7 +28,10 @@ import javax.servlet.Servlet;
 import javax.servlet.http.HttpServlet;
 import java.util.Hashtable;
 
-public class HelloWorldActivator extends KillbillActivatorBase {
+/**
+ * This is the plugin entrance point.
+ */
+public class BluePayActivator extends KillbillActivatorBase {
 
     //
     // Ideally that string should match the pluginName on the filesystem, but there is no enforcement
@@ -42,15 +45,15 @@ public class HelloWorldActivator extends KillbillActivatorBase {
         super.start(context);
 
         // Register an event listener (optional)
-        killbillEventHandler = new HelloWorldListener(logService, killbillAPI);
+        killbillEventHandler = new BluePayListener(logService, killbillAPI);
         dispatcher.registerEventHandlers(killbillEventHandler);
 
         // As an example, this plugin registers a PaymentPluginApi (this could be changed to any other plugin api)
-        final PaymentPluginApi paymentPluginApi = new HelloWorldPaymentPluginApi(configProperties.getProperties(), logService);
+        final PaymentPluginApi paymentPluginApi = new BluePayPaymentPluginApi(configProperties.getProperties(), logService, killbillAPI);
         registerPaymentPluginApi(context, paymentPluginApi);
 
         // Register a servlet (optional)
-        final HelloWorldServlet analyticsServlet = new HelloWorldServlet(logService);
+        final BluePayServlet analyticsServlet = new BluePayServlet(logService);
         registerServlet(context, analyticsServlet);
     }
 
