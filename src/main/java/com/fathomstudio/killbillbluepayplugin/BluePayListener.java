@@ -138,7 +138,7 @@ public class BluePayListener extends PluginConfigurationEventHandler implements 
 				statement.setBoolean(8, test);
 				statement.executeUpdate();
 			} catch (SQLException e) {
-				logService.log(LogService.LOG_ERROR, "Could not configure tenant: ", e);
+				logService.log(LogService.LOG_ERROR, "could not configure tenant: ", e);
 			}
 		}
 	}

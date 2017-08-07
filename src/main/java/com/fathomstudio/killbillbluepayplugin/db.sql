@@ -1,5 +1,5 @@
 DROP TABLE IF EXISTS `bluePay_paymentMethods`;
-CREATE TABLE `bluepay_paymentMethods` (
+CREATE TABLE `bluePay_paymentMethods` (
   `id`              INT(11)      NOT NULL AUTO_INCREMENT,
   `paymentMethodId` VARCHAR(255) NOT NULL,
   `transactionId`   VARCHAR(255) NOT NULL,
