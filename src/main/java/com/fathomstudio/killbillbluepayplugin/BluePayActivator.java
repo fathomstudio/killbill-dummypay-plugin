@@ -32,46 +32,45 @@ import java.util.Hashtable;
  * This is the plugin entrance point.
  */
 public class BluePayActivator extends KillbillActivatorBase {
-
-    //
-    // Ideally that string should match the pluginName on the filesystem, but there is no enforcement
-    //
-    public static final String PLUGIN_NAME = "killbill-bluepay-plugin";
-
-    private OSGIKillbillEventDispatcher.OSGIKillbillEventHandler killbillEventHandler;
-
-    @Override
-    public void start(final BundleContext context) throws Exception {
-        super.start(context);
-
-        // Register an event listener (optional)
-        killbillEventHandler = new BluePayListener(logService, killbillAPI);
-        dispatcher.registerEventHandlers(killbillEventHandler);
-
-        // As an example, this plugin registers a PaymentPluginApi (this could be changed to any other plugin api)
-        final PaymentPluginApi paymentPluginApi = new BluePayPaymentPluginApi(configProperties.getProperties(), logService, killbillAPI);
-        registerPaymentPluginApi(context, paymentPluginApi);
-
-        // Register a servlet (optional)
-        final BluePayServlet analyticsServlet = new BluePayServlet(logService);
-        registerServlet(context, analyticsServlet);
-    }
-
-    @Override
-    public void stop(final BundleContext context) throws Exception {
-        super.stop(context);
-        // Do additional work on shutdown (optional)
-    }
-
-    private void registerServlet(final BundleContext context, final HttpServlet servlet) {
-        final Hashtable<String, String> props = new Hashtable<String, String>();
-        props.put(OSGIPluginProperties.PLUGIN_NAME_PROP, PLUGIN_NAME);
-        registrar.registerService(context, Servlet.class, servlet, props);
-    }
-
-    private void registerPaymentPluginApi(final BundleContext context, final PaymentPluginApi api) {
-        final Hashtable<String, String> props = new Hashtable<String, String>();
-        props.put(OSGIPluginProperties.PLUGIN_NAME_PROP, PLUGIN_NAME);
-        registrar.registerService(context, PaymentPluginApi.class, api, props);
-    }
+	//
+	// Ideally that string should match the pluginName on the filesystem, but there is no enforcement
+	//
+	public static final String PLUGIN_NAME = "killbill-bluepay-plugin";
+	
+	private OSGIKillbillEventDispatcher.OSGIKillbillEventHandler killbillEventHandler;
+	
+	@Override
+	public void start(final BundleContext context) throws Exception {
+		super.start(context);
+		
+		// Register an event listener (optional)
+		killbillEventHandler = new BluePayListener(logService, killbillAPI, dataSource);
+		dispatcher.registerEventHandlers(killbillEventHandler);
+		
+		// As an example, this plugin registers a PaymentPluginApi (this could be changed to any other plugin api)
+		final PaymentPluginApi paymentPluginApi = new BluePayPaymentPluginApi(configProperties.getProperties(), logService, killbillAPI, dataSource);
+		registerPaymentPluginApi(context, paymentPluginApi);
+		
+		// Register a servlet (optional)
+		final BluePayServlet analyticsServlet = new BluePayServlet(logService);
+		registerServlet(context, analyticsServlet);
+	}
+	
+	@Override
+	public void stop(final BundleContext context) throws Exception {
+		super.stop(context);
+		// Do additional work on shutdown (optional)
+	}
+	
+	private void registerServlet(final BundleContext context, final HttpServlet servlet) {
+		final Hashtable<String, String> props = new Hashtable<String, String>();
+		props.put(OSGIPluginProperties.PLUGIN_NAME_PROP, PLUGIN_NAME);
+		registrar.registerService(context, Servlet.class, servlet, props);
+	}
+	
+	private void registerPaymentPluginApi(final BundleContext context, final PaymentPluginApi api) {
+		final Hashtable<String, String> props = new Hashtable<String, String>();
+		props.put(OSGIPluginProperties.PLUGIN_NAME_PROP, PLUGIN_NAME);
+		registrar.registerService(context, PaymentPluginApi.class, api, props);
+	}
 }

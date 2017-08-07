@@ -17,15 +17,12 @@
 
 package com.fathomstudio.killbillbluepayplugin;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.killbill.billing.account.api.Account;
 import org.killbill.billing.account.api.AccountApiException;
-import org.killbill.billing.account.api.MutableAccountData;
 import org.killbill.billing.catalog.api.Currency;
 import org.killbill.billing.osgi.libs.killbill.OSGIKillbillAPI;
+import org.killbill.billing.osgi.libs.killbill.OSGIKillbillDataSource;
 import org.killbill.billing.osgi.libs.killbill.OSGIKillbillLogService;
 import org.killbill.billing.payment.api.PaymentMethodPlugin;
 import org.killbill.billing.payment.api.PluginProperty;
@@ -36,8 +33,10 @@ import org.killbill.billing.util.callcontext.TenantContext;
 import org.killbill.billing.util.entity.Pagination;
 import org.osgi.service.log.LogService;
 
-import java.io.IOException;
 import java.math.BigDecimal;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 
 /**
@@ -48,11 +47,13 @@ public class BluePayPaymentPluginApi implements PaymentPluginApi {
 	private final Properties             properties;
 	private final OSGIKillbillLogService logService;
 	private       OSGIKillbillAPI        killbillAPI;
+	private       OSGIKillbillDataSource dataSource;
 	
-	public BluePayPaymentPluginApi(final Properties properties, final OSGIKillbillLogService logService, final OSGIKillbillAPI killbillAPI) {
+	public BluePayPaymentPluginApi(final Properties properties, final OSGIKillbillLogService logService, final OSGIKillbillAPI killbillAPI, OSGIKillbillDataSource dataSource) {
 		this.properties = properties;
 		this.logService = logService;
 		this.killbillAPI = killbillAPI;
+		this.dataSource = dataSource;
 	}
 	
 	@Override
@@ -191,18 +192,29 @@ public class BluePayPaymentPluginApi implements PaymentPluginApi {
 	public PaymentTransactionInfoPlugin purchasePayment(final UUID kbAccountId, final UUID kbPaymentId, final UUID kbTransactionId, final UUID kbPaymentMethodId, final BigDecimal amount, final Currency currency, final Iterable<PluginProperty> properties, final CallContext context) throws PaymentPluginApiException {
 		// see: https://www.bluepay.com/developers/api-documentation/java/transactions/how-use-token/
 		
-		String accountId = null;
-		String secretKey = null;
-		Boolean test = false;
+		String accountId;
+		String secretKey;
+		Boolean test;
+		
+		String credentialsQuery = "SELECT `accountId`, `secretKey`, `test` FROM `bluePay_credentials` WHERE `tenantId` = ?";
+		try (PreparedStatement statement = dataSource.getDataSource().getConnection().prepareStatement(credentialsQuery)) {
+			statement.setString(1, context.getTenantId().toString());
+			ResultSet resultSet = statement.executeQuery();
+			accountId = resultSet.getString("accountId");
+			secretKey = resultSet.getString("secretKey");
+			test = resultSet.getBoolean("test");
+		} catch (SQLException e) {
+			throw new PaymentPluginApiException("500", e);
+		}
 		
 		// get the necessary properties to access BluePay
 		for (PluginProperty property : properties) {
 			String key = property.getKey();
 			Object value = property.getValue();
 			if (Objects.equals(key, "accountId")) {
-				accountId = (String) value;
+				accountId = value.toString();
 			} else if (Objects.equals(key, "secretKey")) {
-				secretKey = (String) value;
+				secretKey = value.toString();
 			} else if (Objects.equals(key, "test")) {
 				test = (Boolean) value;
 			} else {
@@ -227,25 +239,21 @@ public class BluePayPaymentPluginApi implements PaymentPluginApi {
 			throw new RuntimeException(e);
 		}
 		
-		// get the notes from the account
-		ObjectMapper objectMapper = new ObjectMapper();
-		HashMap map;
-		try {
-			map = objectMapper.readValue(account.getNotes(), HashMap.class);
-		} catch (IOException e) {
-			throw new PaymentPluginApiException("500", "could not read notes");
+		String transactionId;
+		
+		String transactionIdQuery = "SELECT `transactionId` FROM `bluePay_paymentMethods` WHERE `paymentMethodId` = ?";
+		try (PreparedStatement statement = dataSource.getDataSource().getConnection().prepareStatement(transactionIdQuery)) {
+			statement.setString(1, kbPaymentMethodId.toString());
+			ResultSet resultSet = statement.executeQuery();
+			transactionId = resultSet.getString("transactionId");
+		} catch (SQLException e) {
+			throw new PaymentPluginApiException("500", e);
 		}
 		
-		// get the token for this paymentMethodId
-		String token = (String) map.get(kbPaymentMethodId);
-		if (token == null) {
-			throw new PaymentPluginApiException("400", "token is null");
-		}
-		
-		// setup the sale including amount and the token
+		// setup the sale including amount and the transactionId
 		HashMap<String, String> sale = new HashMap<>();
 		sale.put("amount", amount.toString());
-		sale.put("transactionID", token);
+		sale.put("transactionID", transactionId);
 		payment.sale(sale);
 		
 		// do the payment
@@ -537,43 +545,55 @@ public class BluePayPaymentPluginApi implements PaymentPluginApi {
 	public void addPaymentMethod(final UUID kbAccountId, final UUID kbPaymentMethodId, final PaymentMethodPlugin paymentMethodProps, final boolean setDefault, final Iterable<PluginProperty> properties, final CallContext context) throws PaymentPluginApiException {
 		// see: https://www.bluepay.com/developers/api-documentation/java/transactions/store-payment-information/
 		
-		String accountId = null;
-		String secretKey = null;
-		Boolean test = false;
+		String accountId;
+		String secretKey;
+		Boolean test;
+		
+		String credentialsQuery = "SELECT `accountId`, `secretKey`, `test` FROM `bluePay_credentials` WHERE `tenantId` = ?";
+		try (PreparedStatement statement = dataSource.getDataSource().getConnection().prepareStatement(credentialsQuery)) {
+			statement.setString(1, context.getTenantId().toString());
+			ResultSet resultSet = statement.executeQuery();
+			accountId = resultSet.getString("accountId");
+			secretKey = resultSet.getString("secretKey");
+			test = resultSet.getBoolean("test");
+		} catch (SQLException e) {
+			throw new PaymentPluginApiException("500", e);
+		}
+		
 		String type = null;
 		
 		String creditCardNumber = null;
-		Number creditCardCVV2 = null;
-		Number creditCardExpirationMonth = null;
-		Number creditCardExpirationYear = null;
+		String creditCardCVV2 = null;
+		String creditCardExpirationMonth = null;
+		String creditCardExpirationYear = null;
 		
-		Number routingNumber = null;
-		Number accountNumber = null;
+		String routingNumber = null;
+		String accountNumber = null;
 		
 		// get the client-passed properties including BluePay auth details and appropriate credit card or ACH details
 		for (PluginProperty property : properties) {
 			String key = property.getKey();
 			Object value = property.getValue();
 			if (Objects.equals(key, "accountId")) {
-				accountId = (String) value;
+				accountId = value.toString();
 			} else if (Objects.equals(key, "secretKey")) {
-				secretKey = (String) value;
+				secretKey = value.toString();
 			} else if (Objects.equals(key, "test")) {
-				test = (Boolean) value;
+				test = Boolean.parseBoolean(value.toString());
 			} else if (Objects.equals(key, "type")) {
-				type = (String) value;
+				type = value.toString();
 			} else if (Objects.equals(key, "creditCardNumber")) {
-				creditCardNumber = (String) value;
+				creditCardNumber = value.toString();
 			} else if (Objects.equals(key, "creditCardCVV2")) {
-				creditCardCVV2 = (Number) value;
+				creditCardCVV2 = value.toString();
 			} else if (Objects.equals(key, "creditCardExpirationMonth")) {
-				creditCardExpirationMonth = (Number) value;
+				creditCardExpirationMonth = value.toString();
 			} else if (Objects.equals(key, "creditCardExpirationYear")) {
-				creditCardExpirationYear = (Number) value;
+				creditCardExpirationYear = value.toString();
 			} else if (Objects.equals(key, "routingNumber")) {
-				routingNumber = (Number) value;
+				routingNumber = value.toString();
 			} else if (Objects.equals(key, "accountNumber")) {
-				accountNumber = (Number) value;
+				accountNumber = value.toString();
 			} else {
 				throw new PaymentPluginApiException("400", "unrecognized plugin property: " + key);
 			}
@@ -631,8 +651,8 @@ public class BluePayPaymentPluginApi implements PaymentPluginApi {
 			
 			HashMap<String, String> card = new HashMap<>();
 			card.put("cardNumber", creditCardNumber);
-			card.put("expirationDate", creditCardExpirationMonth.toString() + creditCardExpirationYear.toString());
-			card.put("ccv2", creditCardCVV2.toString());
+			card.put("expirationDate", creditCardExpirationMonth + creditCardExpirationYear);
+			card.put("ccv2", creditCardCVV2);
 			bluePay.setCCInformation(card);
 		} else if (Objects.equals(type, "ach")) { // ACH
 			if (routingNumber == null) {
@@ -643,8 +663,8 @@ public class BluePayPaymentPluginApi implements PaymentPluginApi {
 			}
 			
 			HashMap<String, String> ach = new HashMap<>();
-			ach.put("routingNum", routingNumber.toString());
-			ach.put("accountNum", accountNumber.toString());
+			ach.put("routingNum", routingNumber);
+			ach.put("accountNum", accountNumber);
 			bluePay.setACHInformation(ach);
 		} else {
 			throw new PaymentPluginApiException("400", "unknown type: " + type);
@@ -664,147 +684,12 @@ public class BluePayPaymentPluginApi implements PaymentPluginApi {
 		
 		String transactionId = bluePay.getTransID();
 		
-		// get the notes for the account
-		ObjectMapper objectMapper = new ObjectMapper();
-		HashMap map = null;
-		try {
-			map = objectMapper.readValue(account.getNotes(), HashMap.class);
-		} catch (IOException e) {
-			map = new HashMap();
-		}
-		
-		// store the token
-		map.put(kbPaymentMethodId, transactionId);
-		
-		// write back to json
-		final String updatedNotes;
-		try {
-			updatedNotes = objectMapper.writeValueAsString(map);
-		} catch (JsonProcessingException e) {
-			throw new PaymentPluginApiException("500", e);
-		}
-		
-		// update the account with the new notes
-		try {
-			killbillAPI.getAccountUserApi().updateAccount(new Account() {
-				@Override
-				public MutableAccountData toMutableAccountData() {
-					return account.toMutableAccountData();
-				}
-				@Override
-				public Account mergeWithDelegate(Account account) {
-					return account.mergeWithDelegate(account);
-				}
-				@Override
-				public String getExternalKey() {
-					return account.getExternalKey();
-				}
-				@Override
-				public String getName() {
-					return account.getName();
-				}
-				@Override
-				public Integer getFirstNameLength() {
-					return account.getFirstNameLength();
-				}
-				@Override
-				public String getEmail() {
-					return account.getEmail();
-				}
-				@Override
-				public Integer getBillCycleDayLocal() {
-					return account.getBillCycleDayLocal();
-				}
-				@Override
-				public Currency getCurrency() {
-					return account.getCurrency();
-				}
-				@Override
-				public UUID getPaymentMethodId() {
-					return account.getPaymentMethodId();
-				}
-				@Override
-				public DateTimeZone getTimeZone() {
-					return account.getTimeZone();
-				}
-				@Override
-				public String getLocale() {
-					return account.getLocale();
-				}
-				@Override
-				public String getAddress1() {
-					return account.getAddress1();
-				}
-				@Override
-				public String getAddress2() {
-					return account.getAddress2();
-				}
-				@Override
-				public String getCompanyName() {
-					return account.getCompanyName();
-				}
-				@Override
-				public String getCity() {
-					return account.getCity();
-				}
-				@Override
-				public String getStateOrProvince() {
-					return account.getStateOrProvince();
-				}
-				@Override
-				public String getPostalCode() {
-					return account.getPostalCode();
-				}
-				@Override
-				public String getCountry() {
-					return account.getCountry();
-				}
-				@Override
-				public String getPhone() {
-					return account.getPhone();
-				}
-				@Override
-				public Boolean isMigrated() {
-					return account.isMigrated();
-				}
-				@Override
-				public Boolean isNotifiedForInvoices() {
-					return account.isNotifiedForInvoices();
-				}
-				@Override
-				public UUID getParentAccountId() {
-					return account.getParentAccountId();
-				}
-				@Override
-				public Boolean isPaymentDelegatedToParent() {
-					return account.isPaymentDelegatedToParent();
-				}
-				@Override
-				public String getNotes() {
-					return updatedNotes;
-				}
-				@Override
-				public UUID getId() {
-					return account.getId();
-				}
-				@Override
-				public DateTimeZone getFixedOffsetTimeZone() {
-					return account.getFixedOffsetTimeZone();
-				}
-				@Override
-				public DateTime getReferenceTime() {
-					return account.getReferenceTime();
-				}
-				@Override
-				public DateTime getCreatedDate() {
-					return account.getCreatedDate();
-				}
-				@Override
-				public DateTime getUpdatedDate() {
-					return account.getUpdatedDate();
-				}
-			}, context);
-		} catch (Exception e) {
+		String transactionIdQuery = "INSERT INTO `bluePay_paymentMethods` (`paymentMethodId`, `transactionId`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `paymentMethodId` = ?, `transactionId` = ?";
+		try (PreparedStatement statement = dataSource.getDataSource().getConnection().prepareStatement(transactionIdQuery)) {
+			statement.setString(1, kbPaymentMethodId.toString());
+			statement.setString(2, transactionId);
+			statement.executeUpdate();
+		} catch (SQLException e) {
 			throw new PaymentPluginApiException("500", e);
 		}
 	}
