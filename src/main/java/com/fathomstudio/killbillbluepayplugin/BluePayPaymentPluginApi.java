@@ -196,6 +196,7 @@ public class BluePayPaymentPluginApi implements PaymentPluginApi {
 		String secretKey;
 		Boolean test;
 		
+		// TODO switch to NamedParameterStatement: http://www.javaworld.com/article/2077706/core-java/named-parameters-for-preparedstatement.html
 		String credentialsQuery = "SELECT `accountId`, `secretKey`, `test` FROM `bluePay_credentials` WHERE `tenantId` = ?";
 		try (PreparedStatement statement = dataSource.getDataSource().getConnection().prepareStatement(credentialsQuery)) {
 			statement.setString(1, context.getTenantId().toString());
@@ -688,6 +689,8 @@ public class BluePayPaymentPluginApi implements PaymentPluginApi {
 		try (PreparedStatement statement = dataSource.getDataSource().getConnection().prepareStatement(transactionIdQuery)) {
 			statement.setString(1, kbPaymentMethodId.toString());
 			statement.setString(2, transactionId);
+			statement.setString(3, kbPaymentMethodId.toString());
+			statement.setString(4, transactionId);
 			statement.executeUpdate();
 		} catch (SQLException e) {
 			throw new PaymentPluginApiException("500", e);

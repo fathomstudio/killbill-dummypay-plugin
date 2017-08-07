@@ -132,9 +132,13 @@ public class BluePayListener extends PluginConfigurationEventHandler implements 
 				statement.setString(2, accountId);
 				statement.setString(3, secretKey);
 				statement.setBoolean(4, test);
+				statement.setString(5, kbTenantId.toString());
+				statement.setString(6, accountId);
+				statement.setString(7, secretKey);
+				statement.setBoolean(8, test);
 				statement.executeUpdate();
 			} catch (SQLException e) {
-				logService.log(LogService.LOG_ERROR, "Could not configure tenant ");
+				logService.log(LogService.LOG_ERROR, "Could not configure tenant: ", e);
 			}
 		}
 	}
