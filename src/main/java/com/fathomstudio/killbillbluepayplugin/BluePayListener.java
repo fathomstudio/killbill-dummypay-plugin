@@ -126,7 +126,7 @@ public class BluePayListener extends PluginConfigurationEventHandler implements 
 			Boolean test = Boolean.parseBoolean(properties.getProperty("test"));
 			
 			// save the details to the database
-			String credentialsQuery = "INSERT INTO `bluePay_credentials` (`tenantId`, `accountId`, `secretKey`, `test`) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE `tenantId` = ?, `accountId` = ?, `seretKey` = ?, `test` = ?";
+			String credentialsQuery = "INSERT INTO `bluePay_credentials` (`tenantId`, `accountId`, `secretKey`, `test`) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE `tenantId` = ?, `accountId` = ?, `secretKey` = ?, `test` = ?";
 			try (PreparedStatement statement = dataSource.getDataSource().getConnection().prepareStatement(credentialsQuery)) {
 				statement.setString(1, kbTenantId.toString());
 				statement.setString(2, accountId);
