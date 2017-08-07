@@ -201,26 +201,15 @@ public class BluePayPaymentPluginApi implements PaymentPluginApi {
 		try (PreparedStatement statement = dataSource.getDataSource().getConnection().prepareStatement(credentialsQuery)) {
 			statement.setString(1, context.getTenantId().toString());
 			ResultSet resultSet = statement.executeQuery();
+			if (!resultSet.next()) {
+				throw new SQLException("no results");
+			}
 			accountId = resultSet.getString("accountId");
 			secretKey = resultSet.getString("secretKey");
 			test = resultSet.getBoolean("test");
 		} catch (SQLException e) {
+			logService.log(LogService.LOG_ERROR, "could not retrieve credentials: ", e);
 			throw new PaymentPluginApiException("could not retrieve credentials", e);
-		}
-		
-		// get the necessary properties to access BluePay
-		for (PluginProperty property : properties) {
-			String key = property.getKey();
-			Object value = property.getValue();
-			if (Objects.equals(key, "accountId")) {
-				accountId = value.toString();
-			} else if (Objects.equals(key, "secretKey")) {
-				secretKey = value.toString();
-			} else if (Objects.equals(key, "test")) {
-				test = (Boolean) value;
-			} else {
-				throw new PaymentPluginApiException("unrecognized plugin property: " + key, new IllegalArgumentException());
-			}
 		}
 		
 		// setup the payment object with auth details and testing mode
@@ -246,8 +235,12 @@ public class BluePayPaymentPluginApi implements PaymentPluginApi {
 		try (PreparedStatement statement = dataSource.getDataSource().getConnection().prepareStatement(transactionIdQuery)) {
 			statement.setString(1, kbPaymentMethodId.toString());
 			ResultSet resultSet = statement.executeQuery();
+			if (!resultSet.next()) {
+				throw new SQLException("no results");
+			}
 			transactionId = resultSet.getString("transactionId");
 		} catch (SQLException e) {
+			logService.log(LogService.LOG_ERROR, "could not retrieve transaction ID: ", e);
 			throw new PaymentPluginApiException("could not retrieve transaction ID", e);
 		}
 		
@@ -261,6 +254,7 @@ public class BluePayPaymentPluginApi implements PaymentPluginApi {
 		try {
 			payment.process();
 		} catch (Exception e) {
+			logService.log(LogService.LOG_ERROR, "could not make payment: ", e);
 			throw new PaymentPluginApiException("could not make payment", e);
 		}
 		
@@ -554,14 +548,21 @@ public class BluePayPaymentPluginApi implements PaymentPluginApi {
 		try (PreparedStatement statement = dataSource.getDataSource().getConnection().prepareStatement(credentialsQuery)) {
 			statement.setString(1, context.getTenantId().toString());
 			ResultSet resultSet = statement.executeQuery();
+			if (!resultSet.next()) {
+				throw new SQLException("no results");
+			}
 			accountId = resultSet.getString("accountId");
 			secretKey = resultSet.getString("secretKey");
 			test = resultSet.getBoolean("test");
+			logService.log(LogService.LOG_INFO, "accountId: " + accountId);
+			logService.log(LogService.LOG_INFO, "secretKey: " + secretKey);
+			logService.log(LogService.LOG_INFO, "test: " + test);
 		} catch (SQLException e) {
+			logService.log(LogService.LOG_ERROR, "could not retrieve credentials: ", e);
 			throw new PaymentPluginApiException("could not retrieve credentials", e);
 		}
 		
-		String type = null;
+		String paymentType = null;
 		
 		String creditCardNumber = null;
 		String creditCardCVV2 = null;
@@ -572,17 +573,14 @@ public class BluePayPaymentPluginApi implements PaymentPluginApi {
 		String accountNumber = null;
 		
 		// get the client-passed properties including BluePay auth details and appropriate credit card or ACH details
-		for (PluginProperty property : properties) {
+		for (PluginProperty property : paymentMethodProps.getProperties()) {
 			String key = property.getKey();
 			Object value = property.getValue();
-			if (Objects.equals(key, "accountId")) {
-				accountId = value.toString();
-			} else if (Objects.equals(key, "secretKey")) {
-				secretKey = value.toString();
-			} else if (Objects.equals(key, "test")) {
-				test = Boolean.parseBoolean(value.toString());
-			} else if (Objects.equals(key, "type")) {
-				type = value.toString();
+			logService.log(LogService.LOG_INFO, "key: " + key);
+			logService.log(LogService.LOG_INFO, "value: " + value);
+			if (Objects.equals(key, "paymentType")) {
+				logService.log(LogService.LOG_INFO, "setting paymentType");
+				paymentType = value.toString();
 			} else if (Objects.equals(key, "creditCardNumber")) {
 				creditCardNumber = value.toString();
 			} else if (Objects.equals(key, "creditCardCVV2")) {
@@ -601,10 +599,10 @@ public class BluePayPaymentPluginApi implements PaymentPluginApi {
 		}
 		
 		// setup the BluePay payment object with the given auth details
-		if (accountId == null) {
+		if (accountId == null || accountId.isEmpty()) {
 			throw new PaymentPluginApiException("missing accountId", new IllegalArgumentException());
 		}
-		if (secretKey == null) {
+		if (secretKey == null || accountId.isEmpty()) {
 			throw new PaymentPluginApiException("missing secretKey", new IllegalArgumentException());
 		}
 		BluePay bluePay = new BluePay(accountId, secretKey, test ? "TEST" : "LIVE");
@@ -614,15 +612,16 @@ public class BluePayPaymentPluginApi implements PaymentPluginApi {
 		try {
 			account = killbillAPI.getAccountUserApi().getAccountById(kbAccountId, context);
 		} catch (AccountApiException e) {
+			logService.log(LogService.LOG_ERROR, "could not retrieve account: ", e);
 			throw new PaymentPluginApiException("could not retrieve account", e);
 		}
 		
 		// setup the customer that will be associated with this token
 		HashMap<String, String> customer = new HashMap<>();
-		String firstName = account.getName().substring(0, account.getFirstNameLength());
-		String lastName = account.getName().substring(account.getFirstNameLength());
-		logService.log(LogService.LOG_INFO, "firstName: $firstName");
-		logService.log(LogService.LOG_INFO, "lastName: $lastName");
+		String firstName = account.getName() == null ? null : account.getName().substring(0, account.getFirstNameLength());
+		String lastName = account.getName() == null ? null : account.getName().substring(account.getFirstNameLength());
+		logService.log(LogService.LOG_INFO, "firstName: " + firstName);
+		logService.log(LogService.LOG_INFO, "lastName: " + lastName);
 		customer.put("firstName", firstName);
 		customer.put("lastName", lastName);
 		customer.put("address1", account.getAddress1());
@@ -635,11 +634,11 @@ public class BluePayPaymentPluginApi implements PaymentPluginApi {
 		customer.put("email", account.getEmail());
 		bluePay.setCustomerInformation(customer);
 		
-		// setup type-specific payment details
-		if (type == null) {
-			throw new PaymentPluginApiException("missing type", new IllegalArgumentException());
+		// setup paymentType-specific payment details
+		if (paymentType == null || paymentType.isEmpty()) {
+			throw new PaymentPluginApiException("missing paymentType", new IllegalArgumentException());
 		}
-		if (Objects.equals(type, "card")) { // credit card
+		if (Objects.equals(paymentType, "card")) { // credit card
 			if (creditCardNumber == null) {
 				throw new PaymentPluginApiException("missing creditCardNumber", new IllegalArgumentException());
 			}
@@ -655,7 +654,7 @@ public class BluePayPaymentPluginApi implements PaymentPluginApi {
 			card.put("expirationDate", creditCardExpirationMonth + creditCardExpirationYear);
 			card.put("ccv2", creditCardCVV2);
 			bluePay.setCCInformation(card);
-		} else if (Objects.equals(type, "ach")) { // ACH
+		} else if (Objects.equals(paymentType, "ach")) { // ACH
 			if (routingNumber == null) {
 				throw new PaymentPluginApiException("missing routingNumber", new IllegalArgumentException());
 			}
@@ -668,7 +667,7 @@ public class BluePayPaymentPluginApi implements PaymentPluginApi {
 			ach.put("accountNum", accountNumber);
 			bluePay.setACHInformation(ach);
 		} else {
-			throw new PaymentPluginApiException("unknown type: " + type, new IllegalArgumentException());
+			throw new PaymentPluginApiException("unknown paymentType: " + paymentType, new IllegalArgumentException());
 		}
 		
 		HashMap<String, String> auth = new HashMap<>();
@@ -679,11 +678,13 @@ public class BluePayPaymentPluginApi implements PaymentPluginApi {
 		try {
 			bluePay.process();
 		} catch (Exception e) {
+			logService.log(LogService.LOG_ERROR, "could not request token: ", e);
 			throw new PaymentPluginApiException("could not request token", e);
 		}
 		
 		// make sure the request was successful
 		if (!bluePay.isSuccessful()) {
+			logService.log(LogService.LOG_ERROR, "payment unsuccessful: " + bluePay.getMessage());
 			throw new PaymentPluginApiException("payment unsuccessful", bluePay.getMessage());
 		}
 		
@@ -697,6 +698,7 @@ public class BluePayPaymentPluginApi implements PaymentPluginApi {
 			statement.setString(4, transactionId);
 			statement.executeUpdate();
 		} catch (SQLException e) {
+			logService.log(LogService.LOG_ERROR, "could not save transactionn ID: ", e);
 			throw new PaymentPluginApiException("could not save transaction ID", e);
 		}
 	}

@@ -33,7 +33,6 @@ import org.osgi.service.log.LogService;
 import javax.annotation.Nullable;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.Properties;
 import java.util.UUID;
 
 /**
@@ -113,17 +112,21 @@ public class BluePayListener extends PluginConfigurationEventHandler implements 
 			if (kbTenantId == null) {
 				return;
 			}
-			final Properties properties = getTenantConfigurationAsProperties(kbTenantId);
+			final String properties = getTenantConfigurationAsString(kbTenantId);
 			if (properties == null) {
 				// invalid configuration or tenant not configured, we will default to the global configurable (or previous configuration)
 				return;
 			}
 			
-			logService.log(LogService.LOG_INFO, String.format("Properties for tenant='%s': properties='%s'", kbTenantId, properties.stringPropertyNames()));
+			String[] parts = properties.split(";");
 			
-			String accountId = properties.getProperty("accountId");
-			String secretKey = properties.getProperty("secretKey");
-			Boolean test = Boolean.parseBoolean(properties.getProperty("test"));
+			String accountId = parts[0];
+			String secretKey = parts[1];
+			Boolean test = Boolean.parseBoolean(parts[2]);
+			
+			logService.log(LogService.LOG_INFO, "configured with accountId: " + accountId);
+			logService.log(LogService.LOG_INFO, "configured with secretKey: " + secretKey);
+			logService.log(LogService.LOG_INFO, "configured with test: " + test);
 			
 			// save the details to the database
 			String credentialsQuery = "INSERT INTO `bluePay_credentials` (`tenantId`, `accountId`, `secretKey`, `test`) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE `tenantId` = ?, `accountId` = ?, `secretKey` = ?, `test` = ?";
