@@ -146,6 +146,7 @@
 						<!-- Optional resolution because exported by the Felix system bundle -->
 						<Import-Package>
 							javax.net;
+							
 							org.killbill.billing.account.api;
 							org.killbill.billing.catalog.api;
 							org.killbill.billing.invoice.api;
