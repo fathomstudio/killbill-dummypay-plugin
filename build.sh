@@ -1,3 +1,6 @@
 #!/usr/bin/env bash
 
-mvn clean install
+set -e
+
+mvn clean
+mvn install

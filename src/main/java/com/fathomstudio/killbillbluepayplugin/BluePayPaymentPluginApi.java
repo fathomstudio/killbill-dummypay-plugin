@@ -258,6 +258,22 @@ public class BluePayPaymentPluginApi implements PaymentPluginApi {
 			throw new PaymentPluginApiException("could not make payment", e);
 		}
 		
+		// make sure the request was successful
+		if (payment.isSuccessful()) {
+			logService.log(LogService.LOG_INFO, "BluePay payment successful");
+			logService.log(LogService.LOG_INFO,"Transaction Status: " + payment.getStatus());
+			logService.log(LogService.LOG_INFO,"Transaction ID: " + payment.getTransID());
+			logService.log(LogService.LOG_INFO,"Transaction Message: " + payment.getMessage());
+			logService.log(LogService.LOG_INFO,"AVS Result: " + payment.getAVS());
+			logService.log(LogService.LOG_INFO,"CVV2: " + payment.getCVV2());
+			logService.log(LogService.LOG_INFO,"Masked Payment Account: " + payment.getMaskedPaymentAccount());
+			logService.log(LogService.LOG_INFO,"Card Type: " + payment.getCardType());
+			logService.log(LogService.LOG_INFO,"Authorization Code: " + payment.getAuthCode());
+		} else {
+			logService.log(LogService.LOG_ERROR, "BluePay payment unsuccessful: " + payment.getMessage());
+			throw new PaymentPluginApiException("BluePay payment unsuccessful", payment.getMessage());
+		}
+		
 		// send response
 		return new PaymentTransactionInfoPlugin() {
 			@Override
@@ -639,20 +655,27 @@ public class BluePayPaymentPluginApi implements PaymentPluginApi {
 			throw new PaymentPluginApiException("missing paymentType", new IllegalArgumentException());
 		}
 		if (Objects.equals(paymentType, "card")) { // credit card
-			if (creditCardNumber == null) {
+			if (creditCardNumber == null || creditCardNumber.isEmpty()) {
 				throw new PaymentPluginApiException("missing creditCardNumber", new IllegalArgumentException());
 			}
-			if (creditCardExpirationMonth == null) {
+			if (creditCardExpirationMonth == null || creditCardExpirationMonth.isEmpty()) {
 				throw new PaymentPluginApiException("missing creditCardExpirationMonth", new IllegalArgumentException());
 			}
-			if (creditCardCVV2 == null) {
+			if (creditCardExpirationYear == null || creditCardExpirationYear.isEmpty()) {
+				throw new PaymentPluginApiException("missing creditCardExpirationYear", new IllegalArgumentException());
+			}
+			if (creditCardCVV2 == null || creditCardCVV2.isEmpty()) {
 				throw new PaymentPluginApiException("missing creditCardCVV2", new IllegalArgumentException());
 			}
 			
 			HashMap<String, String> card = new HashMap<>();
 			card.put("cardNumber", creditCardNumber);
-			card.put("expirationDate", creditCardExpirationMonth + creditCardExpirationYear);
-			card.put("ccv2", creditCardCVV2);
+			String twoDigitMonth = creditCardExpirationMonth;
+			if (twoDigitMonth.length() == 1) {
+				twoDigitMonth = "0" + twoDigitMonth;
+			}
+			card.put("expirationDate", twoDigitMonth + creditCardExpirationYear);
+			card.put("cvv2", creditCardCVV2);
 			bluePay.setCCInformation(card);
 		} else if (Objects.equals(paymentType, "ach")) { // ACH
 			if (routingNumber == null) {
@@ -683,9 +706,19 @@ public class BluePayPaymentPluginApi implements PaymentPluginApi {
 		}
 		
 		// make sure the request was successful
-		if (!bluePay.isSuccessful()) {
-			logService.log(LogService.LOG_ERROR, "payment unsuccessful: " + bluePay.getMessage());
-			throw new PaymentPluginApiException("payment unsuccessful", bluePay.getMessage());
+		if (bluePay.isSuccessful()) {
+			logService.log(LogService.LOG_INFO, "BluePay token request successful");
+			logService.log(LogService.LOG_INFO,"Transaction Status: " + bluePay.getStatus());
+			logService.log(LogService.LOG_INFO,"Transaction ID: " + bluePay.getTransID());
+			logService.log(LogService.LOG_INFO,"Transaction Message: " + bluePay.getMessage());
+			logService.log(LogService.LOG_INFO,"AVS Result: " + bluePay.getAVS());
+			logService.log(LogService.LOG_INFO,"CVV2: " + bluePay.getCVV2());
+			logService.log(LogService.LOG_INFO,"Masked Payment Account: " + bluePay.getMaskedPaymentAccount());
+			logService.log(LogService.LOG_INFO,"Card Type: " + bluePay.getCardType());
+			logService.log(LogService.LOG_INFO,"Authorization Code: " + bluePay.getAuthCode());
+		} else {
+			logService.log(LogService.LOG_ERROR, "BluePay token request unsuccessful: " + bluePay.getMessage());
+			throw new PaymentPluginApiException("BluePay token request unsuccessful", bluePay.getMessage());
 		}
 		
 		String transactionId = bluePay.getTransID();
