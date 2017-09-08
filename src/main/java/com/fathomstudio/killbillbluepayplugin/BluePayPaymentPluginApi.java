@@ -255,7 +255,6 @@ public class BluePayPaymentPluginApi implements PaymentPluginApi {
 			payment.process();
 		} catch (Exception e) {
 			logService.log(LogService.LOG_ERROR, "could not make payment: ", e);
-			throw new PaymentPluginApiException("could not make payment", e);
 		}
 		
 		// make sure the request was successful
@@ -271,7 +270,6 @@ public class BluePayPaymentPluginApi implements PaymentPluginApi {
 			logService.log(LogService.LOG_INFO,"Authorization Code: " + payment.getAuthCode());
 		} else {
 			logService.log(LogService.LOG_ERROR, "BluePay payment unsuccessful: " + payment.getMessage());
-			throw new PaymentPluginApiException("BluePay payment unsuccessful", payment.getMessage());
 		}
 		
 		// send response
