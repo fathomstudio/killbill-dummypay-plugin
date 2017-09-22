@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package com.fathomstudio.killbillbluepayplugin;
+package com.fathomstudio.killbilldummypayplugin;
 
 import org.killbill.billing.osgi.api.OSGIPluginProperties;
 import org.killbill.billing.osgi.libs.killbill.KillbillActivatorBase;
@@ -31,11 +31,11 @@ import java.util.Hashtable;
 /**
  * This is the plugin entrance point.
  */
-public class BluePayActivator extends KillbillActivatorBase {
+public class DummyPayActivator extends KillbillActivatorBase {
 	//
 	// Ideally that string should match the pluginName on the filesystem, but there is no enforcement
 	//
-	public static final String PLUGIN_NAME = "killbill-bluepay-plugin";
+	public static final String PLUGIN_NAME = "killbill-dummypay-plugin";
 	
 	private OSGIKillbillEventDispatcher.OSGIKillbillEventHandler killbillEventHandler;
 	
@@ -44,15 +44,15 @@ public class BluePayActivator extends KillbillActivatorBase {
 		super.start(context);
 		
 		// Register an event listener (optional)
-		killbillEventHandler = new BluePayListener(logService, killbillAPI, dataSource);
+		killbillEventHandler = new DummyPayListener(logService, killbillAPI, dataSource);
 		dispatcher.registerEventHandlers(killbillEventHandler);
 		
 		// As an example, this plugin registers a PaymentPluginApi (this could be changed to any other plugin api)
-		final PaymentPluginApi paymentPluginApi = new BluePayPaymentPluginApi(configProperties.getProperties(), logService, killbillAPI, dataSource);
+		final PaymentPluginApi paymentPluginApi = new DummyPayPaymentPluginApi(configProperties.getProperties(), logService, killbillAPI, dataSource);
 		registerPaymentPluginApi(context, paymentPluginApi);
 		
 		// Register a servlet (optional)
-		final BluePayServlet analyticsServlet = new BluePayServlet(logService);
+		final DummyPayServlet analyticsServlet = new DummyPayServlet(logService);
 		registerServlet(context, analyticsServlet);
 	}
 	

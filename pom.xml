@@ -24,20 +24,20 @@
         <version>0.140.2</version>
     </parent>
     <groupId>com.fathomstudio</groupId>
-    <artifactId>killbill-bluepay-plugin</artifactId>
+    <artifactId>killbill-dummypay-plugin</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>bundle</packaging>
-    <name>Kill Bill OSGI BluePay plugin</name>
-    <description>Kill Bill BluePay plugin</description>
-    <url>https://github.com/fathomstudio/killbill-bluepay-plugin</url>
+    <name>Kill Bill OSGI DummyPay plugin</name>
+    <description>Kill Bill DummyPay plugin</description>
+    <url>https://github.com/fathomstudio/killbill-dummypay-plugin</url>
     <scm>
-        <connection>scm:git:git://github.com/fathomstudio/killbill-bluepay-plugin.git</connection>
-        <developerConnection>scm:git:git@github.com:fathomstudio/killbill-bluepay-plugin.git</developerConnection>
-        <url>http://github.com/fathomstudio/killbill-bluepay-plugin/tree/master</url>
+        <connection>scm:git:git://github.com/fathomstudio/killbill-dummypay-plugin.git</connection>
+        <developerConnection>scm:git:git@github.com:fathomstudio/killbill-dummypay-plugin.git</developerConnection>
+        <url>http://github.com/fathomstudio/killbill-dummypay-plugin/tree/master</url>
     </scm>
     <issueManagement>
         <system>GitHub</system>
-        <url>https://github.com/fathomstudio/killbill-bluepay-plugin/issues</url>
+        <url>https://github.com/fathomstudio/killbill-dummypay-plugin/issues</url>
     </issueManagement>
     <dependencies>
         <dependency>
@@ -125,9 +125,9 @@
                 </executions>
                 <configuration>
                     <instructions>
-                        <Bundle-Activator>com.fathomstudio.killbillbluepayplugin.BluePayActivator</Bundle-Activator>
+                        <Bundle-Activator>com.fathomstudio.killbilldummypayplugin.DummyPayActivator</Bundle-Activator>
                         <Export-Package />
-                        <Private-Package>com.fathomstudio.killbillbluepayplugin.*</Private-Package>
+                        <Private-Package>com.fathomstudio.killbilldummypayplugin.*</Private-Package>
                         <!-- Optional resolution because exported by the Felix system bundle -->
                         <Import-Package>javax.net;
 							
@@ -311,7 +311,7 @@
                 <artifactId>maven-shade-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>assemble-killbill-osgi-bundles-bluepay-java-plugin</id>
+                        <id>assemble-killbill-osgi-bundles-dummypay-java-plugin</id>
                         <phase>package</phase>
                         <goals>
                             <goal>shade</goal>

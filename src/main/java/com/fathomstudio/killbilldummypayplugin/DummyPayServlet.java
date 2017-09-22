@@ -15,7 +15,7 @@
  * under the License.
  */
 
-package com.fathomstudio.killbillbluepayplugin;
+package com.fathomstudio.killbilldummypayplugin;
 
 import org.osgi.service.log.LogService;
 
@@ -28,17 +28,17 @@ import java.io.IOException;
 /**
  * This allows direct communication to the plugin from a caller.
  */
-public class BluePayServlet extends HttpServlet {
+public class DummyPayServlet extends HttpServlet {
 	
 	private final LogService logService;
 	
-	public BluePayServlet(final LogService logService) {
+	public DummyPayServlet(final LogService logService) {
 		this.logService = logService;
 	}
 	
 	@Override
 	protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
-		// find me on http://killbill:8080/plugins/killbill-bluepay-plugin
+		// find me on http://killbill:8080/plugins/killbill-dummypay-plugin
 		logService.log(LogService.LOG_INFO, "Hello, world!");
 		resp.getOutputStream().print("Hello, world!");
 	}

@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package com.fathomstudio.killbillbluepayplugin;
+package com.fathomstudio.killbilldummypayplugin;
 
 import org.killbill.billing.account.api.Account;
 import org.killbill.billing.account.api.AccountApiException;
@@ -31,29 +31,24 @@ import org.killbill.billing.plugin.api.notification.PluginConfigurationHandler;
 import org.osgi.service.log.LogService;
 
 import javax.annotation.Nullable;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.UUID;
 
 /**
  * Kill Bill events are listened to and handled here.
  */
-public class BluePayListener extends PluginConfigurationEventHandler implements OSGIKillbillEventDispatcher.OSGIKillbillEventHandler {
+public class DummyPayListener extends PluginConfigurationEventHandler implements OSGIKillbillEventDispatcher.OSGIKillbillEventHandler {
 	
 	private final LogService      logService;
 	private final OSGIKillbillAPI osgiKillbillAPI;
 	
-	public BluePayListener(final OSGIKillbillLogService logService, final OSGIKillbillAPI killbillAPI, final OSGIKillbillDataSource dataSource) {
-		super(new BluePayPluginConfigurationHandler(BluePayActivator.PLUGIN_NAME, killbillAPI, logService, dataSource));
+	public DummyPayListener(final OSGIKillbillLogService logService, final OSGIKillbillAPI killbillAPI, final OSGIKillbillDataSource dataSource) {
+		super(new DummyPayPluginConfigurationHandler(DummyPayActivator.PLUGIN_NAME, killbillAPI, logService, dataSource));
 		this.logService = logService;
 		this.osgiKillbillAPI = killbillAPI;
 	}
 	
 	@Override
 	public void handleKillbillEvent(final ExtBusEvent killbillEvent) {
-		
-		logService.log(LogService.LOG_INFO, "Received event " + killbillEvent.getEventType() + " for object id " + killbillEvent.getObjectId() + " of type " + killbillEvent.getObjectType());
-		
 		switch (killbillEvent.getEventType()) {
 			//
 			// Calls java plugin framework PluginConfigurationEventHandler to handle TENANT_CONFIG_CHANGE/TENANT_CONFIG_DELETION events
@@ -96,12 +91,12 @@ public class BluePayListener extends PluginConfigurationEventHandler implements 
 	// -d 'key1=foo1 key2=foo2'
 	// "http://127.0.0.1:8080/1.0/kb/tenants/uploadPluginConfig/hello-world-plugin"
 	//
-	private static class BluePayPluginConfigurationHandler extends PluginConfigurationHandler {
+	private static class DummyPayPluginConfigurationHandler extends PluginConfigurationHandler {
 		
 		private final LogService             logService;
 		private final OSGIKillbillDataSource dataSource;
 		
-		public BluePayPluginConfigurationHandler(String pluginName, OSGIKillbillAPI osgiKillbillAPI, OSGIKillbillLogService osgiKillbillLogService, OSGIKillbillDataSource dataSource) {
+		public DummyPayPluginConfigurationHandler(String pluginName, OSGIKillbillAPI osgiKillbillAPI, OSGIKillbillLogService osgiKillbillLogService, OSGIKillbillDataSource dataSource) {
 			super(pluginName, osgiKillbillAPI, osgiKillbillLogService);
 			this.logService = osgiKillbillLogService;
 			this.dataSource = dataSource;
@@ -116,32 +111,6 @@ public class BluePayListener extends PluginConfigurationEventHandler implements 
 			if (properties == null) {
 				// invalid configuration or tenant not configured, we will default to the global configurable (or previous configuration)
 				return;
-			}
-			
-			String[] parts = properties.split(";");
-			
-			String accountId = parts[0];
-			String secretKey = parts[1];
-			Boolean test = Boolean.parseBoolean(parts[2]);
-			
-			logService.log(LogService.LOG_INFO, "configured with accountId: " + accountId);
-			logService.log(LogService.LOG_INFO, "configured with secretKey: " + secretKey);
-			logService.log(LogService.LOG_INFO, "configured with test: " + test);
-			
-			// save the details to the database
-			String credentialsQuery = "INSERT INTO `bluePay_credentials` (`tenantId`, `accountId`, `secretKey`, `test`) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE `tenantId` = ?, `accountId` = ?, `secretKey` = ?, `test` = ?";
-			try (PreparedStatement statement = dataSource.getDataSource().getConnection().prepareStatement(credentialsQuery)) {
-				statement.setString(1, kbTenantId.toString());
-				statement.setString(2, accountId);
-				statement.setString(3, secretKey);
-				statement.setBoolean(4, test);
-				statement.setString(5, kbTenantId.toString());
-				statement.setString(6, accountId);
-				statement.setString(7, secretKey);
-				statement.setBoolean(8, test);
-				statement.executeUpdate();
-			} catch (SQLException e) {
-				logService.log(LogService.LOG_ERROR, "could not configure tenant: ", e);
 			}
 		}
 	}
