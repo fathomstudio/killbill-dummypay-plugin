@@ -34,6 +34,7 @@ import org.killbill.billing.util.entity.Pagination;
 import org.osgi.service.log.LogService;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -44,10 +45,10 @@ import java.util.*;
  */
 public class DummyPayPaymentPluginApi implements PaymentPluginApi {
 	
-	private final Properties             properties;
+	private final Properties properties;
 	private final OSGIKillbillLogService logService;
-	private       OSGIKillbillAPI        killbillAPI;
-	private       OSGIKillbillDataSource dataSource;
+	private OSGIKillbillAPI killbillAPI;
+	private OSGIKillbillDataSource dataSource;
 	
 	public DummyPayPaymentPluginApi(final Properties properties, final OSGIKillbillLogService logService, final OSGIKillbillAPI killbillAPI, OSGIKillbillDataSource dataSource) {
 		this.properties = properties;
@@ -64,50 +65,62 @@ public class DummyPayPaymentPluginApi implements PaymentPluginApi {
 			public UUID getKbPaymentId() {
 				return kbPaymentId;
 			}
+			
 			@Override
 			public UUID getKbTransactionPaymentId() {
 				return kbgatewayToken;
 			}
+			
 			@Override
 			public TransactionType getTransactionType() {
 				return null;
 			}
+			
 			@Override
 			public BigDecimal getAmount() {
 				return null;
 			}
+			
 			@Override
 			public Currency getCurrency() {
 				return null;
 			}
+			
 			@Override
 			public DateTime getCreatedDate() {
 				return null;
 			}
+			
 			@Override
 			public DateTime getEffectiveDate() {
 				return null;
 			}
+			
 			@Override
 			public PaymentPluginStatus getStatus() {
 				return PaymentPluginStatus.CANCELED;
 			}
+			
 			@Override
 			public String getGatewayError() {
 				return null;
 			}
+			
 			@Override
 			public String getGatewayErrorCode() {
 				return null;
 			}
+			
 			@Override
 			public String getFirstPaymentReferenceId() {
 				return null;
 			}
+			
 			@Override
 			public String getSecondPaymentReferenceId() {
 				return null;
 			}
+			
 			@Override
 			public List<PluginProperty> getProperties() {
 				return null;
@@ -123,50 +136,62 @@ public class DummyPayPaymentPluginApi implements PaymentPluginApi {
 			public UUID getKbPaymentId() {
 				return kbPaymentId;
 			}
+			
 			@Override
 			public UUID getKbTransactionPaymentId() {
 				return kbgatewayToken;
 			}
+			
 			@Override
 			public TransactionType getTransactionType() {
 				return null;
 			}
+			
 			@Override
 			public BigDecimal getAmount() {
 				return null;
 			}
+			
 			@Override
 			public Currency getCurrency() {
 				return null;
 			}
+			
 			@Override
 			public DateTime getCreatedDate() {
 				return null;
 			}
+			
 			@Override
 			public DateTime getEffectiveDate() {
 				return null;
 			}
+			
 			@Override
 			public PaymentPluginStatus getStatus() {
 				return PaymentPluginStatus.CANCELED;
 			}
+			
 			@Override
 			public String getGatewayError() {
 				return null;
 			}
+			
 			@Override
 			public String getGatewayErrorCode() {
 				return null;
 			}
+			
 			@Override
 			public String getFirstPaymentReferenceId() {
 				return null;
 			}
+			
 			@Override
 			public String getSecondPaymentReferenceId() {
 				return null;
 			}
+			
 			@Override
 			public List<PluginProperty> getProperties() {
 				return null;
@@ -201,13 +226,18 @@ public class DummyPayPaymentPluginApi implements PaymentPluginApi {
 		String gatewayToken;
 		
 		String gatewayTokenQuery = "SELECT `gatewayToken` FROM `dummyPay_paymentMethods` WHERE `paymentMethodId` = ?";
-		try (PreparedStatement statement = dataSource.getDataSource().getConnection().prepareStatement(gatewayTokenQuery)) {
-			statement.setString(1, kbPaymentMethodId.toString());
-			ResultSet resultSet = statement.executeQuery();
-			if (!resultSet.next()) {
-				throw new SQLException("no results");
+		try (Connection connection = dataSource.getDataSource().getConnection()) {
+			try (PreparedStatement statement = connection.prepareStatement(gatewayTokenQuery)) {
+				statement.setString(1, kbPaymentMethodId.toString());
+				ResultSet resultSet = statement.executeQuery();
+				if (!resultSet.next()) {
+					throw new SQLException("no results");
+				}
+				gatewayToken = resultSet.getString("gatewayToken");
+			} catch (SQLException e) {
+				logService.log(LogService.LOG_ERROR, "could not retrieve gateway token: ", e);
+				throw new PaymentPluginApiException("could not retrieve gateway token", e);
 			}
-			gatewayToken = resultSet.getString("gatewayToken");
 		} catch (SQLException e) {
 			logService.log(LogService.LOG_ERROR, "could not retrieve gateway token: ", e);
 			throw new PaymentPluginApiException("could not retrieve gateway token", e);
@@ -221,50 +251,62 @@ public class DummyPayPaymentPluginApi implements PaymentPluginApi {
 			public UUID getKbPaymentId() {
 				return kbPaymentId;
 			}
+			
 			@Override
 			public UUID getKbTransactionPaymentId() {
 				return kbgatewayToken;
 			}
+			
 			@Override
 			public TransactionType getTransactionType() {
 				return TransactionType.PURCHASE;
 			}
+			
 			@Override
 			public BigDecimal getAmount() {
 				return amount;
 			}
+			
 			@Override
 			public Currency getCurrency() {
 				return currency;
 			}
+			
 			@Override
 			public DateTime getCreatedDate() {
 				return DateTime.now();
 			}
+			
 			@Override
 			public DateTime getEffectiveDate() {
 				return DateTime.now();
 			}
+			
 			@Override
 			public PaymentPluginStatus getStatus() {
 				return PaymentPluginStatus.PROCESSED;
 			}
+			
 			@Override
 			public String getGatewayError() {
 				return null;
 			}
+			
 			@Override
 			public String getGatewayErrorCode() {
 				return null;
 			}
+			
 			@Override
 			public String getFirstPaymentReferenceId() {
 				return null;
 			}
+			
 			@Override
 			public String getSecondPaymentReferenceId() {
 				return null;
 			}
+			
 			@Override
 			public List<PluginProperty> getProperties() {
 				return null;
@@ -280,50 +322,62 @@ public class DummyPayPaymentPluginApi implements PaymentPluginApi {
 			public UUID getKbPaymentId() {
 				return kbPaymentId;
 			}
+			
 			@Override
 			public UUID getKbTransactionPaymentId() {
 				return kbgatewayToken;
 			}
+			
 			@Override
 			public TransactionType getTransactionType() {
 				return null;
 			}
+			
 			@Override
 			public BigDecimal getAmount() {
 				return null;
 			}
+			
 			@Override
 			public Currency getCurrency() {
 				return null;
 			}
+			
 			@Override
 			public DateTime getCreatedDate() {
 				return null;
 			}
+			
 			@Override
 			public DateTime getEffectiveDate() {
 				return null;
 			}
+			
 			@Override
 			public PaymentPluginStatus getStatus() {
 				return PaymentPluginStatus.CANCELED;
 			}
+			
 			@Override
 			public String getGatewayError() {
 				return null;
 			}
+			
 			@Override
 			public String getGatewayErrorCode() {
 				return null;
 			}
+			
 			@Override
 			public String getFirstPaymentReferenceId() {
 				return null;
 			}
+			
 			@Override
 			public String getSecondPaymentReferenceId() {
 				return null;
 			}
+			
 			@Override
 			public List<PluginProperty> getProperties() {
 				return null;
@@ -339,50 +393,62 @@ public class DummyPayPaymentPluginApi implements PaymentPluginApi {
 			public UUID getKbPaymentId() {
 				return kbPaymentId;
 			}
+			
 			@Override
 			public UUID getKbTransactionPaymentId() {
 				return kbgatewayToken;
 			}
+			
 			@Override
 			public TransactionType getTransactionType() {
 				return null;
 			}
+			
 			@Override
 			public BigDecimal getAmount() {
 				return null;
 			}
+			
 			@Override
 			public Currency getCurrency() {
 				return null;
 			}
+			
 			@Override
 			public DateTime getCreatedDate() {
 				return null;
 			}
+			
 			@Override
 			public DateTime getEffectiveDate() {
 				return null;
 			}
+			
 			@Override
 			public PaymentPluginStatus getStatus() {
 				return PaymentPluginStatus.CANCELED;
 			}
+			
 			@Override
 			public String getGatewayError() {
 				return null;
 			}
+			
 			@Override
 			public String getGatewayErrorCode() {
 				return null;
 			}
+			
 			@Override
 			public String getFirstPaymentReferenceId() {
 				return null;
 			}
+			
 			@Override
 			public String getSecondPaymentReferenceId() {
 				return null;
 			}
+			
 			@Override
 			public List<PluginProperty> getProperties() {
 				return null;
@@ -398,50 +464,62 @@ public class DummyPayPaymentPluginApi implements PaymentPluginApi {
 			public UUID getKbPaymentId() {
 				return kbPaymentId;
 			}
+			
 			@Override
 			public UUID getKbTransactionPaymentId() {
 				return kbgatewayToken;
 			}
+			
 			@Override
 			public TransactionType getTransactionType() {
 				return null;
 			}
+			
 			@Override
 			public BigDecimal getAmount() {
 				return null;
 			}
+			
 			@Override
 			public Currency getCurrency() {
 				return null;
 			}
+			
 			@Override
 			public DateTime getCreatedDate() {
 				return null;
 			}
+			
 			@Override
 			public DateTime getEffectiveDate() {
 				return null;
 			}
+			
 			@Override
 			public PaymentPluginStatus getStatus() {
 				return PaymentPluginStatus.CANCELED;
 			}
+			
 			@Override
 			public String getGatewayError() {
 				return null;
 			}
+			
 			@Override
 			public String getGatewayErrorCode() {
 				return null;
 			}
+			
 			@Override
 			public String getFirstPaymentReferenceId() {
 				return null;
 			}
+			
 			@Override
 			public String getSecondPaymentReferenceId() {
 				return null;
 			}
+			
 			@Override
 			public List<PluginProperty> getProperties() {
 				return null;
@@ -463,18 +541,22 @@ public class DummyPayPaymentPluginApi implements PaymentPluginApi {
 			public Long getCurrentOffset() {
 				return null;
 			}
+			
 			@Override
 			public Long getNextOffset() {
 				return null;
 			}
+			
 			@Override
 			public Long getMaxNbRecords() {
 				return null;
 			}
+			
 			@Override
 			public Long getTotalNbRecords() {
 				return null;
 			}
+			
 			@Override
 			public Iterator<PaymentTransactionInfoPlugin> iterator() {
 				return null;
@@ -532,12 +614,17 @@ public class DummyPayPaymentPluginApi implements PaymentPluginApi {
 		logService.log(LogService.LOG_INFO, "BluePay token request successful");
 		
 		String gatewayTokenQuery = "INSERT INTO `dummyPay_paymentMethods` (`paymentMethodId`, `gatewayToken`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `paymentMethodId` = ?, `gatewayToken` = ?";
-		try (PreparedStatement statement = dataSource.getDataSource().getConnection().prepareStatement(gatewayTokenQuery)) {
-			statement.setString(1, kbPaymentMethodId.toString());
-			statement.setString(2, gatewayToken);
-			statement.setString(3, kbPaymentMethodId.toString());
-			statement.setString(4, gatewayToken);
-			statement.executeUpdate();
+		try (Connection connection = dataSource.getDataSource().getConnection()) {
+			try (PreparedStatement statement = connection.prepareStatement(gatewayTokenQuery)) {
+				statement.setString(1, kbPaymentMethodId.toString());
+				statement.setString(2, gatewayToken);
+				statement.setString(3, kbPaymentMethodId.toString());
+				statement.setString(4, gatewayToken);
+				statement.executeUpdate();
+			} catch (SQLException e) {
+				logService.log(LogService.LOG_ERROR, "could not save gateway token: ", e);
+				throw new PaymentPluginApiException("could not save gateway token", e);
+			}
 		} catch (SQLException e) {
 			logService.log(LogService.LOG_ERROR, "could not save gateway token: ", e);
 			throw new PaymentPluginApiException("could not save gateway token", e);
@@ -557,14 +644,17 @@ public class DummyPayPaymentPluginApi implements PaymentPluginApi {
 			public UUID getKbPaymentMethodId() {
 				return kbPaymentMethodId;
 			}
+			
 			@Override
 			public String getExternalPaymentMethodId() {
 				return null;
 			}
+			
 			@Override
 			public boolean isDefaultPaymentMethod() {
 				return false;
 			}
+			
 			@Override
 			public List<PluginProperty> getProperties() {
 				return null;
@@ -591,18 +681,22 @@ public class DummyPayPaymentPluginApi implements PaymentPluginApi {
 			public Long getCurrentOffset() {
 				return null;
 			}
+			
 			@Override
 			public Long getNextOffset() {
 				return null;
 			}
+			
 			@Override
 			public Long getMaxNbRecords() {
 				return null;
 			}
+			
 			@Override
 			public Long getTotalNbRecords() {
 				return null;
 			}
+			
 			@Override
 			public Iterator<PaymentMethodPlugin> iterator() {
 				return null;
@@ -623,18 +717,22 @@ public class DummyPayPaymentPluginApi implements PaymentPluginApi {
 			public UUID getKbAccountId() {
 				return kbAccountId;
 			}
+			
 			@Override
 			public String getFormMethod() {
 				return null;
 			}
+			
 			@Override
 			public String getFormUrl() {
 				return null;
 			}
+			
 			@Override
 			public List<PluginProperty> getFormFields() {
 				return null;
 			}
+			
 			@Override
 			public List<PluginProperty> getProperties() {
 				return null;
@@ -650,18 +748,22 @@ public class DummyPayPaymentPluginApi implements PaymentPluginApi {
 			public UUID getKbPaymentId() {
 				return null;
 			}
+			
 			@Override
 			public int getStatus() {
 				return 0;
 			}
+			
 			@Override
 			public String getEntity() {
 				return null;
 			}
+			
 			@Override
 			public Map<String, List<String>> getHeaders() {
 				return null;
 			}
+			
 			@Override
 			public List<PluginProperty> getProperties() {
 				return null;
