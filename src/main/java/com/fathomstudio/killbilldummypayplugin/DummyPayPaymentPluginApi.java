@@ -33,22 +33,27 @@ import org.killbill.billing.util.callcontext.TenantContext;
 import org.killbill.billing.util.entity.Pagination;
 import org.osgi.service.log.LogService;
 
+import javax.net.ssl.HttpsURLConnection;
+import java.io.*;
 import java.math.BigDecimal;
+import java.net.URL;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * The DummyPay gateway interface.
  */
 public class DummyPayPaymentPluginApi implements PaymentPluginApi {
 	
-	private final Properties properties;
+	private final Properties             properties;
 	private final OSGIKillbillLogService logService;
-	private OSGIKillbillAPI killbillAPI;
-	private OSGIKillbillDataSource dataSource;
+	private       OSGIKillbillAPI        killbillAPI;
+	private       OSGIKillbillDataSource dataSource;
 	
 	public DummyPayPaymentPluginApi(final Properties properties, final OSGIKillbillLogService logService, final OSGIKillbillAPI killbillAPI, OSGIKillbillDataSource dataSource) {
 		this.properties = properties;
@@ -243,9 +248,54 @@ public class DummyPayPaymentPluginApi implements PaymentPluginApi {
 			throw new PaymentPluginApiException("could not retrieve gateway token", e);
 		}
 		
-		logService.log(LogService.LOG_INFO, "DummyPay payment successful with gateway token: " + gatewayToken);
+		String message = "{\"type\":\"saved\",\"savedId\":\"" + gatewayToken + "\",\"amount\":" + amount + "}";
+		logService.log(LogService.LOG_INFO, "Constructed message: " + message);
+		
+		int status;
+		String error = null;
+		
+		HttpsURLConnection connection = null;
+		String out = "";
+		try {
+			connection = (HttpsURLConnection) new URL("https://dummypay.io/pay").openConnection();
+			connection.setRequestMethod("POST");
+			connection.setRequestProperty("Content-Type", "application/json");
+			connection.setDoOutput(true);
+			connection.connect();
+			
+			// write
+			connection.getOutputStream().write(message.getBytes());
+			
+			// read
+			try (InputStream inputStream = connection.getInputStream()) {
+				Reader input = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
+				for (int c = input.read(); c != -1; c = input.read()) {
+					out += (char) c;
+				}
+			}
+			status = connection.getResponseCode();
+		} catch (IOException e) {
+			logService.log(LogService.LOG_ERROR, "Could not complete payment", e);
+			throw new PaymentPluginApiException("Could not complete payment", e);
+		} finally {
+			if (connection != null) {
+				connection.disconnect();
+			}
+		}
+		if (status == 204) {
+			logService.log(LogService.LOG_INFO, "DummyPay payment successful with gateway token: " + gatewayToken);
+		} else if (status == 470) {
+			Matcher m = Pattern.compile("\"message\":\"(.+)\"").matcher(out);
+			m.find();
+			error = m.group(1);
+			logService.log(LogService.LOG_INFO, "DummyPay payument unsuccessful with error: " + error);
+		} else {
+			throw new PaymentPluginApiException("Didn't expect a " + status + " response code: " + out, new Exception());
+		}
 		
 		// send response
+		final int finalStatus = status;
+		final String finalError = error;
 		return new PaymentTransactionInfoPlugin() {
 			@Override
 			public UUID getKbPaymentId() {
@@ -284,7 +334,7 @@ public class DummyPayPaymentPluginApi implements PaymentPluginApi {
 			
 			@Override
 			public PaymentPluginStatus getStatus() {
-				return PaymentPluginStatus.PROCESSED;
+				return finalStatus == 204 ? PaymentPluginStatus.PROCESSED : PaymentPluginStatus.ERROR;
 			}
 			
 			@Override
@@ -294,7 +344,7 @@ public class DummyPayPaymentPluginApi implements PaymentPluginApi {
 			
 			@Override
 			public String getGatewayErrorCode() {
-				return null;
+				return finalError;
 			}
 			
 			@Override
@@ -610,12 +660,69 @@ public class DummyPayPaymentPluginApi implements PaymentPluginApi {
 			}
 		}
 		
-		String gatewayToken = UUID.randomUUID().toString();
-		logService.log(LogService.LOG_INFO, "BluePay token request successful");
+		String message;
+		if (Objects.equals(paymentType, "card")) {
+			message = "{\"type\":\"card\",\"cardNumber\":" + creditCardNumber + ",\"cardCvv\":" + creditCardCVV2 + ",\"cardExpMonth\":" + creditCardExpirationMonth + ",\"cardExpYear\":" + creditCardExpirationYear + "}";
+		} else if (Objects.equals(paymentType, "ach")) {
+			message = "{\"type\":\"bank\",\"bankRouting\":" + routingNumber + ",\"bankAccount\":" + accountNumber + "}";
+		} else {
+			throw new PaymentPluginApiException("unknown paymentType: " + paymentType, new Exception());
+		}
+		logService.log(LogService.LOG_INFO, "Constructed message: " + message);
+		
+		int status;
+		String error = null;
+		String gatewayToken;
+		
+		HttpsURLConnection connection = null;
+		String out = "";
+		try {
+			connection = (HttpsURLConnection) new URL("https://dummypay.io/save").openConnection();
+			connection.setRequestMethod("POST");
+			connection.setRequestProperty("Content-Type", "application/json");
+			connection.setDoOutput(true);
+			connection.connect();
+			
+			// write
+			connection.getOutputStream().write(message.getBytes());
+			
+			// read
+			try (InputStream inputStream = connection.getInputStream()) {
+				Reader input = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
+				for (int c = input.read(); c != -1; c = input.read()) {
+					out += (char) c;
+				}
+			}
+			status = connection.getResponseCode();
+		} catch (IOException e) {
+			logService.log(LogService.LOG_ERROR, "Could not complete save", e);
+			throw new PaymentPluginApiException("Could not complete save", e);
+		} finally {
+			if (connection != null) {
+				connection.disconnect();
+			}
+		}
+		
+		logService.log(LogService.LOG_INFO, "status: " + status);
+		logService.log(LogService.LOG_INFO, "out: " + out);
+		
+		if (status == 200) {
+			Matcher m = Pattern.compile("\"savedId\":\"(.+)\"").matcher(out);
+			m.find();
+			gatewayToken = m.group(1);
+			logService.log(LogService.LOG_INFO, "DummyPay save successful with gateway token: " + gatewayToken);
+		} else if (status == 470) {
+			Matcher m = Pattern.compile("\"message\":\"(.+)\"").matcher(out);
+			error = m.group(1);
+			logService.log(LogService.LOG_INFO, "DummyPay save unsuccessful with error: " + error);
+			throw new PaymentPluginApiException("DummyPay save unsuccessful with error: " + error, new Exception());
+		} else {
+			throw new PaymentPluginApiException("Didn't expect a " + status + " response code: " + out, new Exception());
+		}
 		
 		String gatewayTokenQuery = "INSERT INTO `dummyPay_paymentMethods` (`paymentMethodId`, `gatewayToken`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `paymentMethodId` = ?, `gatewayToken` = ?";
-		try (Connection connection = dataSource.getDataSource().getConnection()) {
-			try (PreparedStatement statement = connection.prepareStatement(gatewayTokenQuery)) {
+		try (Connection dataConnection = dataSource.getDataSource().getConnection()) {
+			try (PreparedStatement statement = dataConnection.prepareStatement(gatewayTokenQuery)) {
 				statement.setString(1, kbPaymentMethodId.toString());
 				statement.setString(2, gatewayToken);
 				statement.setString(3, kbPaymentMethodId.toString());
