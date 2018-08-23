@@ -284,7 +284,7 @@ public class DummyPayPaymentPluginApi implements PaymentPluginApi {
 		}
 		if (status == 204) {
 			logService.log(LogService.LOG_INFO, "DummyPay payment successful with gateway token: " + gatewayToken);
-		} else if (status == 470) {
+		} else if (status == 402) {
 			Matcher m = Pattern.compile("\"message\":\"(.+)\"").matcher(out);
 			m.find();
 			error = m.group(1);
@@ -711,7 +711,7 @@ public class DummyPayPaymentPluginApi implements PaymentPluginApi {
 			m.find();
 			gatewayToken = m.group(1);
 			logService.log(LogService.LOG_INFO, "DummyPay save successful with gateway token: " + gatewayToken);
-		} else if (status == 470) {
+		} else if (status == 402) {
 			Matcher m = Pattern.compile("\"message\":\"(.+)\"").matcher(out);
 			error = m.group(1);
 			logService.log(LogService.LOG_INFO, "DummyPay save unsuccessful with error: " + error);
